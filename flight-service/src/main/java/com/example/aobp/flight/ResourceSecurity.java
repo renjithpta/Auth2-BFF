@@ -25,7 +25,7 @@ import java.util.*;
   var c=new JwtAuthenticationConverter();c.setJwtGrantedAuthoritiesConverter(jwt->{
    Map<String,Object> realm=jwt.getClaimAsMap("realm_access");if(realm==null)return List.of();
    Object roles=realm.get("roles");if(!(roles instanceof Collection<?> list))return List.of();
-   return list.stream().filter(String.class::isInstance).map(String.class::cast).map(x->new SimpleGrantedAuthority("ROLE_"+x)).toList();
+   return list.stream().filter(String.class::isInstance).map(String.class::cast).map(x->(org.springframework.security.core.GrantedAuthority)new SimpleGrantedAuthority("ROLE_"+x)).toList();
   });return c;
  }
 }
