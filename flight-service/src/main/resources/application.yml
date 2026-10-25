@@ -1,0 +1,16 @@
+server:
+  port: 8091
+spring:
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8085/realms/aobp}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,10 @@
+server:
+  port: 8092
+security:
+  issuer-uri: ${OIDC_ISSUER_URI}
+spring:
+  data:
+    redis:
+      url: ${REDIS_URL}
+      ssl:
+        enabled: true

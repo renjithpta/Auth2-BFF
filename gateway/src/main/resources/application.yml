@@ -1,0 +1,23 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: aobp-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: bff
+              uri: ${BFF_URL:http://localhost:8081}
+              predicates:
+                - Path=/**
+              filters:
+                - RemoveRequestHeader=Authorization
+                - RemoveRequestHeader=X-User-Id
+                - RemoveRequestHeader=X-User-Roles
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
