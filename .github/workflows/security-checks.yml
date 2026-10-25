@@ -1,0 +1,17 @@
+name: Security checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check committed secrets
+        run: |
+          if grep -RInE --exclude-dir=.git --exclude='*.md' '(-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|password[[:space:]]*:[[:space:]]*[^${[:space:]]+)' .; then
+            echo 'Review potential hard-coded credentials'; exit 1
+          fi
