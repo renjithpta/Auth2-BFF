@@ -6,7 +6,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.core.*;
-import org.springframework.security.oauth2.core.delegation.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.server.resource.authentication.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.*;
