@@ -1,0 +1,32 @@
+{
+  "realm": "aobp",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "FLIGHT_VIEW"
+      },
+      {
+        "name": "WORKFLOW_VIEW"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "aobp-bff",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/login/oauth2/code/aobp"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ]
+}
