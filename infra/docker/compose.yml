@@ -1,0 +1,272 @@
+{
+  "name": "aobp-reference",
+  "services": {
+    "redis": {
+      "image": "valkey/valkey:8.1-alpine",
+      "command": [
+        "valkey-server",
+        "--appendonly",
+        "yes"
+      ],
+      "volumes": [
+        "redis-data:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "valkey-cli",
+          "ping"
+        ],
+        "interval": "5s",
+        "timeout": "2s",
+        "retries": 20
+      }
+    },
+    "keycloak": {
+      "image": "quay.io/keycloak/keycloak:26.3.5",
+      "command": [
+        "start-dev",
+        "--import-realm"
+      ],
+      "environment": {
+        "KC_BOOTSTRAP_ADMIN_USERNAME": "admin",
+        "KC_BOOTSTRAP_ADMIN_PASSWORD": "${KC_ADMIN_PASSWORD:?Run configure.py}",
+        "KC_HOSTNAME": "${IDENTITY_ORIGIN:-http://localhost:8085}",
+        "KC_HOSTNAME_BACKCHANNEL_DYNAMIC": "true"
+      },
+      "ports": [
+        "127.0.0.1:8085:8080"
+      ],
+      "volumes": [
+        "../../.runtime/aobp-realm.json:/opt/keycloak/data/import/aobp-realm.json:ro",
+        "identity-data:/opt/keycloak/data"
+      ]
+    },
+    "gateway": {
+      "image": "aobp/gateway:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.java",
+        "args": {
+          "MODULE": "gateway"
+        }
+      },
+      "environment": {
+        "MANAGEMENT_PORT": "9090",
+        "REDIS_URL": "redis://redis:6379",
+        "OIDC_ISSUER_URI": "${IDENTITY_ORIGIN:-http://localhost:8085}/realms/aobp",
+        "OIDC_INTERNAL_BASE": "http://keycloak:8080",
+        "OIDC_JWKS_URI": "http://keycloak:8080/realms/aobp/protocol/openid-connect/certs",
+        "OTLP_TRACES_URL": "http://otel:4318/v1/traces",
+        "FLIGHT_URL": "http://flight-service:8091",
+        "WORKFLOW_URL": "http://workflow-service:8092",
+        "BFF_URL": "http://bff:8081",
+        "BFF_WS_URL": "ws://bff:8081"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "keycloak": {
+          "condition": "service_started"
+        }
+      },
+      "restart": "on-failure",
+      "ports": [
+        "127.0.0.1:8080:8080"
+      ]
+    },
+    "bff": {
+      "image": "aobp/bff:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.java",
+        "args": {
+          "MODULE": "bff"
+        }
+      },
+      "environment": {
+        "MANAGEMENT_PORT": "9090",
+        "REDIS_URL": "redis://redis:6379",
+        "OIDC_ISSUER_URI": "${IDENTITY_ORIGIN:-http://localhost:8085}/realms/aobp",
+        "OIDC_INTERNAL_BASE": "http://keycloak:8080",
+        "OIDC_JWKS_URI": "http://keycloak:8080/realms/aobp/protocol/openid-connect/certs",
+        "OTLP_TRACES_URL": "http://otel:4318/v1/traces",
+        "FLIGHT_URL": "http://flight-service:8091",
+        "WORKFLOW_URL": "http://workflow-service:8092",
+        "BFF_URL": "http://bff:8081",
+        "BFF_WS_URL": "ws://bff:8081",
+        "OIDC_CLIENT_SECRET": "${OIDC_CLIENT_SECRET:?Run configure.py}",
+        "TOKEN_ENCRYPTION_KEY": "${TOKEN_ENCRYPTION_KEY:?Run configure.py}",
+        "PUBLIC_ORIGIN": "${PUBLIC_ORIGIN:-http://localhost:8088}",
+        "COOKIE_SECURE": "false"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "keycloak": {
+          "condition": "service_started"
+        }
+      },
+      "restart": "on-failure"
+    },
+    "flight-service": {
+      "image": "aobp/flight-service:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.java",
+        "args": {
+          "MODULE": "flight-service"
+        }
+      },
+      "environment": {
+        "MANAGEMENT_PORT": "9090",
+        "REDIS_URL": "redis://redis:6379",
+        "OIDC_ISSUER_URI": "${IDENTITY_ORIGIN:-http://localhost:8085}/realms/aobp",
+        "OIDC_INTERNAL_BASE": "http://keycloak:8080",
+        "OIDC_JWKS_URI": "http://keycloak:8080/realms/aobp/protocol/openid-connect/certs",
+        "OTLP_TRACES_URL": "http://otel:4318/v1/traces",
+        "FLIGHT_URL": "http://flight-service:8091",
+        "WORKFLOW_URL": "http://workflow-service:8092",
+        "BFF_URL": "http://bff:8081",
+        "BFF_WS_URL": "ws://bff:8081"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "keycloak": {
+          "condition": "service_started"
+        }
+      },
+      "restart": "on-failure"
+    },
+    "workflow-service": {
+      "image": "aobp/workflow-service:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.java",
+        "args": {
+          "MODULE": "workflow-service"
+        }
+      },
+      "environment": {
+        "MANAGEMENT_PORT": "9090",
+        "REDIS_URL": "redis://redis:6379",
+        "OIDC_ISSUER_URI": "${IDENTITY_ORIGIN:-http://localhost:8085}/realms/aobp",
+        "OIDC_INTERNAL_BASE": "http://keycloak:8080",
+        "OIDC_JWKS_URI": "http://keycloak:8080/realms/aobp/protocol/openid-connect/certs",
+        "OTLP_TRACES_URL": "http://otel:4318/v1/traces",
+        "FLIGHT_URL": "http://flight-service:8091",
+        "WORKFLOW_URL": "http://workflow-service:8092",
+        "BFF_URL": "http://bff:8081",
+        "BFF_WS_URL": "ws://bff:8081"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "keycloak": {
+          "condition": "service_started"
+        }
+      },
+      "restart": "on-failure"
+    },
+    "shell": {
+      "image": "aobp/shell:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.ui",
+        "args": {
+          "UI_DIR": "ui"
+        }
+      }
+    },
+    "flight-mfe": {
+      "image": "aobp/flight-mfe:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.ui",
+        "args": {
+          "UI_DIR": "ui-flight"
+        }
+      }
+    },
+    "workflow-mfe": {
+      "image": "aobp/workflow-mfe:demo",
+      "build": {
+        "context": "../..",
+        "dockerfile": "infra/docker/Dockerfile.ui",
+        "args": {
+          "UI_DIR": "ui-workflow"
+        }
+      }
+    },
+    "edge": {
+      "image": "nginxinc/nginx-unprivileged:1.28-alpine",
+      "ports": [
+        "127.0.0.1:8088:8080"
+      ],
+      "volumes": [
+        "./edge.conf:/etc/nginx/conf.d/default.conf:ro"
+      ],
+      "depends_on": [
+        "shell",
+        "flight-mfe",
+        "workflow-mfe",
+        "gateway"
+      ]
+    },
+    "prometheus": {
+      "image": "prom/prometheus:v3.5.0",
+      "volumes": [
+        "../observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      ],
+      "ports": [
+        "127.0.0.1:9090:9090"
+      ]
+    },
+    "grafana": {
+      "image": "grafana/grafana:12.1.1",
+      "ports": [
+        "127.0.0.1:3000:3000"
+      ],
+      "environment": {
+        "GF_SECURITY_ADMIN_PASSWORD": "${KC_ADMIN_PASSWORD:?Run configure.py}",
+        "GF_AUTH_ANONYMOUS_ENABLED": "false"
+      },
+      "volumes": [
+        "../observability/grafana/provisioning:/etc/grafana/provisioning:ro",
+        "../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro",
+        "grafana-data:/var/lib/grafana"
+      ]
+    },
+    "tempo": {
+      "image": "grafana/tempo:2.8.2",
+      "command": [
+        "-config.file=/etc/tempo.yml"
+      ],
+      "volumes": [
+        "../observability/tempo.yml:/etc/tempo.yml:ro"
+      ]
+    },
+    "otel": {
+      "image": "otel/opentelemetry-collector-contrib:0.133.0",
+      "command": [
+        "--config=/etc/otel.yml"
+      ],
+      "volumes": [
+        "../observability/otel.yml:/etc/otel.yml:ro"
+      ],
+      "depends_on": [
+        "tempo"
+      ]
+    }
+  },
+  "volumes": {
+    "redis-data": {},
+    "identity-data": {},
+    "grafana-data": {}
+  }
+}

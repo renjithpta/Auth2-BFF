@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: aobp-demo
+data:
+  prometheus.yml: "global:\n  scrape_interval: 10s\nscrape_configs:\n  - job_name:\
+    \ aobp\n    metrics_path: /actuator/prometheus\n    static_configs:\n      - targets:\
+    \ ['gateway:9090','bff:9090','flight-service:9090','workflow-service:9090']\n"

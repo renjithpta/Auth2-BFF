@@ -1,0 +1,6 @@
+apiVersion: v2
+name: aobp-reference
+description: AOBP authentication demonstration; not a production infrastructure chart
+type: application
+version: 0.1.0
+appVersion: 1.0.0

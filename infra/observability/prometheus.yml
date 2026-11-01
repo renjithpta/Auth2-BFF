@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 10s
+scrape_configs:
+  - job_name: aobp
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['gateway:9090','bff:9090','flight-service:9090','workflow-service:9090']

@@ -1,16 +1,41 @@
 server:
   port: 8091
+  shutdown: graceful
 spring:
+  application:
+    name: flight-service
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8085/realms/aobp}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,prometheus,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        spring.cloud.gateway.requests: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLE_RATE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACES_URL:http://localhost:4318/v1/traces}
+logging:
+  structured:
+    format:
+      console: logstash
+aobp:
+  issuer: ${OIDC_ISSUER_URI:http://localhost:8085/realms/aobp}
+  jwks: ${OIDC_JWKS_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/certs}
+  audience: flight-information-api

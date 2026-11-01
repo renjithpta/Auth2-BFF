@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: aobp-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      containers:
+      - name: gateway
+        image: aobp/gateway:demo
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: management
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+        envFrom:
+        - configMapRef:
+            name: gateway-config
+        startupProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: management
+          periodSeconds: 5
+          failureThreshold: 60
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: management
+          periodSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: management
+          periodSeconds: 5
+          failureThreshold: 3

@@ -1,0 +1,52 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "workflow-mfe",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "workflow-mfe"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "workflow-mfe"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "workflow-mfe",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "workflow-mfe" | default "aobp/workflow-mfe:demo" | quote }},
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

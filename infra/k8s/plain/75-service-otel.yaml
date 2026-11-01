@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel
+  namespace: aobp-demo
+spec:
+  selector:
+    app: otel
+  ports:
+  - name: http
+    port: 4318
+    targetPort: 4318

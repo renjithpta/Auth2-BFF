@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-mfe
+  namespace: aobp-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-mfe
+  template:
+    metadata:
+      labels:
+        app: workflow-mfe
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      containers:
+      - name: workflow-mfe
+        image: aobp/workflow-mfe:demo
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault

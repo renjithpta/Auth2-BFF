@@ -1,0 +1,78 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "keycloak",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "keycloak"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "keycloak"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "keycloak",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "keycloak" | default "quay.io/keycloak/keycloak:26.3.5" | quote }},
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "keycloak-config"
+                }
+              }
+            ],
+            "args": [
+              "start-dev",
+              "--import-realm"
+            ],
+            "volumeMounts": [
+              {
+                "name": "realm",
+                "mountPath": "/opt/keycloak/data/import",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "realm",
+            "secret": {
+              "secretName": "aobp-realm"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

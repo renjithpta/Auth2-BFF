@@ -1,0 +1,52 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "shell",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "shell"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "shell"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "shell",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "shell" | default "aobp/shell:demo" | quote }},
+            "ports": [
+              {
+                "containerPort": 8080,
+                "name": "http"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

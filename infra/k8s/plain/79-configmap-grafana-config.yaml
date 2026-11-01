@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: aobp-demo
+data:
+  datasources.yaml: "apiVersion: 1\ndatasources:\n  - name: Prometheus\n    uid: prometheus\n\
+    \    type: prometheus\n    url: http://prometheus:9090\n    access: proxy\n  \
+    \  isDefault: true\n  - name: Tempo\n    uid: tempo\n    type: tempo\n    url:\
+    \ http://tempo:3200\n    access: proxy\n"
+  dashboards.yaml: "apiVersion: 1\nproviders:\n  - name: AOBP\n    folder: AOBP\n\
+    \    type: file\n    options:\n      path: /var/lib/grafana/dashboards\n"
+  aobp.json: "{\n  \"uid\": \"aobp-platform\",\n  \"title\": \"AOBP \\u2014 requests,\
+    \ security and performance\",\n  \"schemaVersion\": 39,\n  \"version\": 1,\n \
+    \ \"refresh\": \"10s\",\n  \"time\": {\n    \"from\": \"now-15m\",\n    \"to\"\
+    : \"now\"\n  },\n  \"panels\": [\n    {\n      \"id\": 1,\n      \"title\": \"\
+    Service availability\",\n      \"type\": \"timeseries\",\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"gridPos\": {\n        \"x\": 0,\n        \"y\": 0,\n        \"\
+    w\": 12,\n        \"h\": 8\n      },\n      \"targets\": [\n        {\n      \
+    \    \"expr\": \"up{job=\\\"aobp\\\"}\",\n          \"refId\": \"A\"\n       \
+    \ }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Request throughput\"\
+    ,\n      \"type\": \"timeseries\",\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"gridPos\"\
+    : {\n        \"x\": 12,\n        \"y\": 0,\n        \"w\": 12,\n        \"h\"\
+    : 8\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum by (instance)\
+    \ (rate(http_server_requests_seconds_count{job=\\\"aobp\\\"}[2m]))\",\n      \
+    \    \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 3,\n \
+    \     \"title\": \"HTTP server errors\",\n      \"type\": \"timeseries\",\n  \
+    \    \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    prometheus\"\n      },\n      \"gridPos\": {\n        \"x\": 0,\n        \"y\"\
+    : 8,\n        \"w\": 12,\n        \"h\": 8\n      },\n      \"targets\": [\n \
+    \       {\n          \"expr\": \"sum by (instance) (rate(http_server_requests_seconds_count{job=\\\
+    \"aobp\\\",status=~\\\"5..\\\"}[2m]))\",\n          \"refId\": \"A\"\n       \
+    \ }\n      ]\n    },\n    {\n      \"id\": 4,\n      \"title\": \"p95 service\
+    \ latency\",\n      \"type\": \"timeseries\",\n      \"datasource\": {\n     \
+    \   \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n   \
+    \   \"gridPos\": {\n        \"x\": 12,\n        \"y\": 8,\n        \"w\": 12,\n\
+    \        \"h\": 8\n      },\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"histogram_quantile(0.95, sum by (le,instance) (rate(http_server_requests_seconds_bucket{job=\\\
+    \"aobp\\\"}[2m])))\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 5,\n      \"title\": \"Authorization denials\",\n      \"\
+    type\": \"timeseries\",\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"gridPos\": {\n        \"\
+    x\": 0,\n        \"y\": 16,\n        \"w\": 12,\n        \"h\": 8\n      },\n\
+    \      \"targets\": [\n        {\n          \"expr\": \"sum by (instance) (rate(http_server_requests_seconds_count{job=\\\
+    \"aobp\\\",status=\\\"403\\\"}[2m]))\",\n          \"refId\": \"A\"\n        }\n\
+    \      ]\n    },\n    {\n      \"id\": 6,\n      \"title\": \"JVM heap bytes\"\
+    ,\n      \"type\": \"timeseries\",\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"gridPos\"\
+    : {\n        \"x\": 12,\n        \"y\": 16,\n        \"w\": 12,\n        \"h\"\
+    : 8\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum by (instance)\
+    \ (jvm_memory_used_bytes{area=\\\"heap\\\",job=\\\"aobp\\\"})\",\n          \"\
+    refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 7,\n      \"\
+    title\": \"Successful flight mutations\",\n      \"type\": \"timeseries\",\n \
+    \     \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    prometheus\"\n      },\n      \"gridPos\": {\n        \"x\": 0,\n        \"y\"\
+    : 24,\n        \"w\": 12,\n        \"h\": 8\n      },\n      \"targets\": [\n\
+    \        {\n          \"expr\": \"sum(rate(aobp_flight_updates_total[2m]))\",\n\
+    \          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\":\
+    \ 8,\n      \"title\": \"Gateway throughput\",\n      \"type\": \"timeseries\"\
+    ,\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\"\
+    : \"prometheus\"\n      },\n      \"gridPos\": {\n        \"x\": 12,\n       \
+    \ \"y\": 24,\n        \"w\": 12,\n        \"h\": 8\n      },\n      \"targets\"\
+    : [\n        {\n          \"expr\": \"sum by (routeId) (rate(spring_cloud_gateway_requests_seconds_count[2m]))\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    }\n  ]\n}\n"

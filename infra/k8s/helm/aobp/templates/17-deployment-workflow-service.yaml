@@ -1,0 +1,88 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "workflow-service",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "workflow-service"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "workflow-service"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "workflow-service",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "workflow-service" | default "aobp/workflow-service:demo" | quote }},
+            "ports": [
+              {
+                "containerPort": 8092,
+                "name": "http"
+              },
+              {
+                "containerPort": 9090,
+                "name": "management"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              },
+              "runAsNonRoot": true
+            },
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "workflow-service-config"
+                }
+              }
+            ],
+            "startupProbe": {
+              "httpGet": {
+                "path": "/actuator/health/liveness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 60
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/actuator/health/liveness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 3
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/actuator/health/readiness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 3
+            }
+          }
+        ]
+      }
+    }
+  }
+}

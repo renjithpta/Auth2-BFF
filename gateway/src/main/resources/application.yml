@@ -1,5 +1,6 @@
 server:
   port: 8080
+  shutdown: graceful
 spring:
   application:
     name: aobp-gateway
@@ -7,17 +8,60 @@ spring:
     gateway:
       server:
         webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 5s
+          default-filters:
+          - RemoveRequestHeader=X-User-Id
+          - RemoveRequestHeader=X-User-Roles
+          - RemoveRequestHeader=Forwarded
           routes:
-            - id: bff
-              uri: ${BFF_URL:http://localhost:8081}
-              predicates:
-                - Path=/**
-              filters:
-                - RemoveRequestHeader=Authorization
-                - RemoveRequestHeader=X-User-Id
-                - RemoveRequestHeader=X-User-Roles
+          - id: flight-partner
+            uri: ${FLIGHT_URL:http://localhost:8091}
+            predicates:
+            - Path=/api/v1/flights,/api/v1/flights/**
+            filters:
+            - RemoveRequestHeader=Cookie
+          - id: browser-ws
+            uri: ${BFF_WS_URL:ws://localhost:8081}
+            predicates:
+            - Path=/bff/ws/v1
+            filters:
+            - RemoveRequestHeader=Authorization
+          - id: browser-bff
+            uri: ${BFF_URL:http://localhost:8081}
+            predicates:
+            - Path=/bff/**,/oauth2/**,/login/**,/logout
+            filters:
+            - RemoveRequestHeader=Authorization
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,prometheus,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        spring.cloud.gateway.requests: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLE_RATE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACES_URL:http://localhost:4318/v1/traces}
+logging:
+  structured:
+    format:
+      console: logstash
+aobp:
+  issuer: ${OIDC_ISSUER_URI:http://localhost:8085/realms/aobp}
+  jwks: ${OIDC_JWKS_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/certs}
