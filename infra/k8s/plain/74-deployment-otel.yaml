@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel
+  namespace: aobp-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel
+  template:
+    metadata:
+      labels:
+        app: otel
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: otel
+        image: otel/opentelemetry-collector-contrib:0.133.0
+        ports:
+        - containerPort: 4318
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        args:
+        - --config=/etc/otel.yml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otel.yml
+          subPath: otel.yml
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: otel-config

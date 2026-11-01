@@ -1,18 +1,33 @@
-# Auth2-BFF — Distributed authentication reference
+# AOBP — secure integration reference
 
-This branch introduces the architecture and deployment contract for a React SPA, Spring Boot BFF, Spring Cloud Gateway, Redis and downstream OAuth2 resource servers.
+An executable reference for independently deployed React microfrontends, a replaceable gateway, session-based BFF, Keycloak and independently secured Flight/Workflow APIs.
 
-## Modules
-- `ui`: React SPA; no OAuth tokens stored in the browser.
-- `gateway`: ingress routing, throttling and trusted proxy boundaries.
-- `bff`: OIDC confidential client, HttpOnly session cookie, CSRF, server-side token management.
-- `flight-service`, `workflow-service`: resource servers; validate issuer, audience and permissions.
-- `infra`: local Keycloak/Redis and Kubernetes deployment assets.
+## Start here
 
-## Status
-Architecture and deployment scaffolding only on this branch. **Not a production-ready implementation.** Do not deploy until the complete source, build verification, integration tests, secret management, and security review have been completed.
+1. Read [architecture and security boundaries](docs/architecture.md).
+2. Choose **one** execution mode; do not run conflicting modes on the same ports.
+   - [Docker Compose](docs/run-compose.md): simplest full-stack demonstration, including Grafana/Tempo.
+   - [Docker CLI only](docs/run-docker.md): explicit containers/network lifecycle.
+   - [Native processes](docs/run-native.md): no Docker or Kubernetes.
+   - [Kubernetes plain manifests](docs/run-kubernetes.md).
+   - [Kubernetes Helm](docs/run-helm.md).
+3. Follow [Keycloak setup/onboarding](docs/keycloak.md).
+4. Present [browser and ATC demonstrations](docs/demo.md).
+5. Use [API/error/log contracts](docs/api-contracts.md) and [monitoring](docs/monitoring.md).
+6. Review [verification evidence](docs/verification.md) and [production gates](docs/production-checklist.md).
 
-## Token handling
-Never expose access or refresh tokens to React. Store session and authorized client server-side. On logout, invalidate the session, perform OIDC RP-initiated logout, and denylist issued tokens until their expiration. Downstream services must fail closed on unavailable revocation checks.
+## Implemented paths
 
-See `docs/architecture.md` and `docs/production-checklist.md`.
+| Caller           | Path                                           | Credential                                |
+| ---------------- | ---------------------------------------------- | ----------------------------------------- |
+| Browser          | UI entry → gateway → BFF → Flight/Workflow API | Cookie to BFF; access token to API        |
+| ATC              | Gateway → Flight API                           | Client Credentials bearer token           |
+| Browser realtime | UI entry → gateway → BFF WebSocket             | Existing session; no browser access token |
+
+UI images are independent from the gateway. The shell runtime-loads flight/workflow remotes from a same-origin manifest. The gateway exposes no arbitrary catch-all proxy. Domain APIs validate issuer, signature, expiry and their own audience, then enforce roles and terminal scope.
+
+## Reference boundaries
+
+Flight data and workflow tasks are demonstration fixtures. Flight updates use process-local optimistic concurrency; they are **not a persistent or multi-replica AODB implementation**. Native/Compose/Kubernetes examples are local development deployments. They use HTTP and disposable credentials, require no production data, and are not approved production configurations. Production TLS, durable business/audit storage, HA/DR, dependency/security scans and load testing remain release gates.
+
+No access/refresh tokens are returned to React. Generated credentials live only in ignored `.env` / `.runtime`. Do not commit them or expose the local identity admin console to the network.

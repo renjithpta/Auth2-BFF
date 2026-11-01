@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: aobp-demo
+data:
+  otel.yml: "receivers:\n  otlp:\n    protocols:\n      http:\n        endpoint: 0.0.0.0:4318\n\
+    processors:\n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 128\n \
+    \ batch: {}\nexporters:\n  otlphttp:\n    endpoint: http://tempo:4318\n    tls:\n\
+    \      insecure: true\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n\
+    \      processors: [memory_limiter, batch]\n      exporters: [otlphttp]\n"

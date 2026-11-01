@@ -1,0 +1,67 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "redis",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "redis"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "redis"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "redis",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "redis" | default "valkey/valkey:8.1-alpine" | quote }},
+            "ports": [
+              {
+                "containerPort": 6379,
+                "name": "redis"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "args": [
+              "valkey-server",
+              "--appendonly",
+              "no"
+            ],
+            "readinessProbe": {
+              "exec": {
+                "command": [
+                  "valkey-cli",
+                  "ping"
+                ]
+              },
+              "initialDelaySeconds": 3,
+              "periodSeconds": 5
+            }
+          }
+        ]
+      }
+    }
+  }
+}

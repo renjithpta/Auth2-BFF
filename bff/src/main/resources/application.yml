@@ -1,8 +1,11 @@
 server:
   port: 8081
+  shutdown: graceful
   servlet:
     session:
       cookie:
+        name: AOBPSESSION
+        path: /
         http-only: true
         secure: ${COOKIE_SECURE:true}
         same-site: lax
@@ -13,22 +16,55 @@ spring:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
   session:
-    store-type: redis
     timeout: 30m
+    redis:
+      flush-mode: immediate
   security:
     oauth2:
       client:
         registration:
           aobp:
             provider: keycloak
-            client-id: ${OIDC_CLIENT_ID:aobp-bff}
+            client-id: aobp-bff
             client-secret: ${OIDC_CLIENT_SECRET}
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: ${PUBLIC_ORIGIN:http://localhost:8088}/login/oauth2/code/aobp
             scope: openid,profile,email
         provider:
           keycloak:
             issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8085/realms/aobp}
+            authorization-uri: ${OIDC_AUTH_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/auth}
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/token}
+            jwk-set-uri: ${OIDC_JWKS_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/certs}
+            user-info-uri: ${OIDC_USERINFO_URI:http://localhost:8085/realms/aobp/protocol/openid-connect/userinfo}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 services:
   flight: ${FLIGHT_URL:http://localhost:8091}
   workflow: ${WORKFLOW_URL:http://localhost:8092}
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        spring.cloud.gateway.requests: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLE_RATE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACES_URL:http://localhost:4318/v1/traces}
+logging:
+  structured:
+    format:
+      console: logstash

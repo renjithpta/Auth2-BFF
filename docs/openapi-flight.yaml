@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: AOBP Flight reference API
+  version: 1.0.0
+  description: Fixture service; not a persistent operational AODB.
+servers:
+- url: http://localhost:8080/api/v1
+security:
+- bearerAuth: []
+paths:
+  /flights:
+    get:
+      operationId: listFlights
+      summary: List authorized terminal-scoped flights
+      parameters:
+      - in: query
+        name: terminalId
+        schema:
+          type: string
+        required: false
+      responses:
+        '200':
+          description: Authorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Flight'
+                  meta:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+        '400': &id005
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': &id001
+          description: Missing/invalid/revoked token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403': &id002
+          description: Permission denied
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503': &id003
+          description: Required verification unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /flights/{id}:
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getFlight
+      responses:
+        '200': &id004
+          description: Authorized flight
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Strong opaque concurrency tag
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Flight'
+        '401': *id001
+        '403': *id002
+        '404': &id006
+          description: Not found or concealed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503': *id003
+    patch:
+      operationId: updateFlightStatus
+      parameters:
+      - in: header
+        name: If-Match
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              additionalProperties: false
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - SCHEDULED
+                  - BOARDING
+                  - DEPARTED
+      responses:
+        '200': *id004
+        '400': *id005
+        '401': *id001
+        '403': *id002
+        '404': *id006
+        '409':
+          description: Business state conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Stale If-Match
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503': *id003
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Flight:
+      type: object
+      required:
+      - flightId
+      - flightNumber
+      - airportId
+      - terminalId
+      - airlineCode
+      - status
+      - version
+      properties:
+        flightId:
+          type: string
+        flightNumber:
+          type: string
+        airportId:
+          type: string
+        terminalId:
+          type: string
+        airlineCode:
+          type: string
+        status:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+        instance:
+          type: string
+          format: uri
+        requestId:
+          type: string
+        traceId:
+          type: string

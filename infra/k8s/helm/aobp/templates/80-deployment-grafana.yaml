@@ -1,0 +1,98 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "grafana",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "grafana"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "grafana"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "name": "grafana",
+            "image": "grafana/grafana:12.1.1",
+            "ports": [
+              {
+                "containerPort": 3000,
+                "name": "http"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "256Mi"
+              },
+              "limits": {
+                "memory": "1Gi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "env": [
+              {
+                "name": "GF_SECURITY_ADMIN_PASSWORD",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "aobp-runtime",
+                    "key": "KC_ADMIN_PASSWORD"
+                  }
+                }
+              },
+              {
+                "name": "GF_AUTH_ANONYMOUS_ENABLED",
+                "value": "false"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "config",
+                "mountPath": "/etc/grafana/provisioning/datasources/aobp.yml",
+                "subPath": "datasources.yaml",
+                "readOnly": true
+              },
+              {
+                "name": "config",
+                "mountPath": "/etc/grafana/provisioning/dashboards/aobp.yml",
+                "subPath": "dashboards.yaml",
+                "readOnly": true
+              },
+              {
+                "name": "config",
+                "mountPath": "/var/lib/grafana/dashboards/aobp.json",
+                "subPath": "aobp.json",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "config",
+            "configMap": {
+              "name": "grafana-config"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "flight": {
+    "version": "1.0.0",
+    "url": "/mfes/flight/remoteEntry.js"
+  },
+  "workflow": {
+    "version": "1.0.0",
+    "url": "/mfes/workflow/remoteEntry.js"
+  }
+}

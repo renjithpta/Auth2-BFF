@@ -1,7 +1,7 @@
-# Distributed refresh and user-blocking limitations
+# Distributed refresh: guarantees and limitations
 
-The Redis refresh lock in DistributedTokenCoordinator prevents most concurrent refresh calls, but does **not** implement fencing. If a refresh exceeds the 25-second lock TTL, another replica can refresh concurrently and stale state can overwrite a rotated refresh token. Do not deploy without fencing/versioned authorized-client writes and concurrency tests.
+The repository uses a 25-second per-session lease, 90-second refresh skew, and atomic Redis owner-check plus token-state save. Refresh results from a worker whose lease expired are rejected. Redis state is loaded afresh under the lease, not from a stale HTTP-session snapshot.
 
-The administrative account-block endpoint writes a Redis key, but the downstream JWT filters must check this key against the authenticated token subject to enforce user-wide blocking. Method-level security must also be enabled for @PreAuthorize to take effect. These are release blockers.
+Keycloak refresh and Redis persistence cannot commit atomically. If a worker crashes after rotating a refresh token but before saving the new token, login is required again. Fencing protects correctness, not seamless availability. Lease loss must not cause stale-token relay. Coordinate concurrent requests; do not retry invalid_grant with the old token.
 
-Validate the Keycloak issuer URL, trusted proxy headers, cookie scope, OIDC logout, Redis TLS and session serialization. Never commit real credentials.
+Production verification must include two BFF replicas, rotation enabled, lease expiry, process crash between refresh/save, Redis failover, network delay and log inspection for secret leakage. Test evidence is recorded separately; the implementation is not a claim that those distributed failure tests have passed.

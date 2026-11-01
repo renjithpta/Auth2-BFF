@@ -1,0 +1,88 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "flight-service",
+    "namespace": {{ .Release.Namespace | quote }}
+  },
+  "spec": {
+    "replicas": {{ .Values.replicaCount }},
+    "selector": {
+      "matchLabels": {
+        "app": "flight-service"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "flight-service"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 45,
+        "containers": [
+          {
+            "name": "flight-service",
+            "imagePullPolicy": {{ .Values.imagePullPolicy | quote }},
+            "image": {{ index .Values.images "flight-service" | default "aobp/flight-service:demo" | quote }},
+            "ports": [
+              {
+                "containerPort": 8091,
+                "name": "http"
+              },
+              {
+                "containerPort": 9090,
+                "name": "management"
+              }
+            ],
+            "resources": {{ toJson .Values.resources }},
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              },
+              "runAsNonRoot": true
+            },
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "flight-service-config"
+                }
+              }
+            ],
+            "startupProbe": {
+              "httpGet": {
+                "path": "/actuator/health/liveness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 60
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/actuator/health/liveness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 3
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/actuator/health/readiness",
+                "port": "management"
+              },
+              "periodSeconds": 5,
+              "failureThreshold": 3
+            }
+          }
+        ]
+      }
+    }
+  }
+}
